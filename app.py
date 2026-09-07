@@ -1,7 +1,11 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import math
+import json
 
+from business_catalog import generate_business_catalog
 from database import get_dashboard_stats, initialise_database, save_market_survey, save_profile
+from translations import UI
 
 BUSINESSES = [
     {
@@ -36,6 +40,16 @@ BUSINESSES = [
     },
 ]
 
+# 1,080 budget-scale and market-specific advisory plans.
+BUSINESSES = generate_business_catalog()
+LANGUAGE_OPTIONS = ["বাংলা", "English", "हिंदी"]
+
+
+def get_ui_texts() -> dict:
+    if "language" not in st.session_state:
+        st.session_state.language = "বাংলা"
+    return UI.get(st.session_state.language, UI["বাংলা"])
+
 
 st.set_page_config(
     page_title="GramSathi AI",
@@ -49,9 +63,20 @@ def inject_css() -> None:
     st.markdown(
         """
         <style>
-            .stApp { background: #f7faf5; color: #1d2b20; }
-            [data-testid="stSidebar"] { background: #123b2a; }
-            [data-testid="stSidebar"] * { color: #f7fff6 !important; }
+            .stApp {
+                background: #f7faf5;
+                color: #1d2b20;
+            }
+            [data-testid="stSidebar"] {
+                background: #123b2a;
+            }
+            [data-testid="stSidebar"] * {
+                color: #f7fff6 !important;
+            }
+            .stMain > div {
+                background: #f7faf5;
+                color: #1d2b20;
+            }
             .hero {
                 padding: 2rem; border-radius: 18px;
                 background: linear-gradient(120deg, #123b2a, #28734c);
@@ -65,11 +90,41 @@ def inject_css() -> None:
             }
             .metric-card h3 { color: #28734c; margin: 0 0 .35rem; }
             .metric-card p { color: #516156; margin: 0; }
+
+            .stTextInput > label,
+            .stNumberInput > label,
+            .stSelectbox > label,
+            .stMultiSelect > label,
+            .stTextArea > label,
+            .stForm > div > div > label {
+                color: #1d3f2f !important;
+                font-weight: 600;
+            }
+
+            .stTextInput input,
+            .stNumberInput input,
+            .stTextArea textarea,
+            .stSelectbox div[role="combobox"],
+            .stMultiSelect div[role="combobox"] {
+                background: white !important;
+                color: #1d2b20 !important;
+                border: 1px solid #b8d2bf !important;
+                border-radius: 10px !important;
+            }
+
+            .stTextInput input::placeholder,
+            .stTextArea textarea::placeholder {
+                color: #6b7a6e !important;
+            }
+
             .stButton > button {
                 background: #e4a83c; color: #1c2c20; border: none;
                 border-radius: 8px; font-weight: 700; padding: .55rem 1rem;
             }
             .stButton > button p { color: #1c2c20 !important; }
+            .stButton > button:hover {
+                background: #d89b1e;
+            }
         </style>
         """,
         unsafe_allow_html=True,
@@ -83,77 +138,113 @@ def initialise_state() -> None:
         st.session_state.selected_business = None
     if "market_data" not in st.session_state:
         st.session_state.market_data = None
+    if "language" not in st.session_state:
+        st.session_state.language = "বাংলা"
+
+
+def get_ui_texts() -> dict:
+    return UI.get(st.session_state.get("language", "বাংলা"), UI["বাংলা"])
+
+
+def get_profile_option_sets() -> dict:
+    language = st.session_state.get("language", "বাংলা")
+    if language == "English":
+        return {
+            "education": ["Primary", "Higher Secondary", "Graduate", "Diploma/ITI", "Other"],
+            "experience": ["None", "0–1 year", "1–3 years", "3+ years"],
+            "skills": ["Agriculture", "Livestock", "Tailoring/Handicraft", "Food Processing", "Repair", "Digital Service", "Sales", "Teaching"],
+            "interests": ["Agri-based", "Food Processing", "Handicraft", "Retail Sales", "Service", "Livestock"],
+        }
+    if language == "हिंदी":
+        return {
+            "education": ["प्राथमिक", "उच्च माध्यमिक", "स्नातक", "डिप्लोमा/ITI", "अन्य"],
+            "experience": ["कोई नहीं", "0–1 वर्ष", "1–3 वर्ष", "3+ वर्ष"],
+            "skills": ["कृषि", "पशुधन", "टेलोरिंग/हस्तशिल्प", "खाद्य प्रसंस्करण", "मरम्मत", "डिजिटल सेवा", "बिक्री", "शिक्षण"],
+            "interests": ["कृषि आधारित", "खाद्य प्रसंस्करण", "हस्तशिल्प", "रिटेल बिक्री", "सेवा", "पशुधन"],
+        }
+    return {
+        "education": ["বিদ্যালয়", "উচ্চ মাধ্যমিক", "স্নাতক", "ডিপ্লোমা/ITI", "অন্যান্য"],
+        "experience": ["নেই", "0–1 বছর", "1–3 বছর", "3+ বছর"],
+        "skills": ["কৃষি", "পশুপালন", "সেলাই/হস্তশিল্প", "খাদ্য তৈরি", "মেরামত", "ডিজিটাল সেবা", "বিক্রয়", "শিক্ষাদান"],
+        "interests": ["কৃষিভিত্তিক", "খাদ্য প্রক্রিয়াজাতকরণ", "হস্তশিল্প", "খুচরা বিক্রয়", "সেবা", "পশুপালন"],
+    }
+
+
+def t(key: str) -> str:
+    return get_ui_texts().get(key, key)
 
 
 def show_home() -> None:
+    texts = get_ui_texts()
     st.markdown(
-        """
+        f"""
         <div class="hero">
-            <h1>🌾 GramSathi AI</h1>
-            <p>গ্রামীণ ক্ষুদ্র উদ্যোক্তার জন্য স্থানীয় ব্যবসা পরামর্শ ও আর্থিক পরিকল্পনা সহকারী</p>
+            <h1>🌾 {texts['hero_title']}</h1>
+            <p>{texts['tagline']}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.subheader("আপনার ব্যবসার সঙ্গী")
-    st.write(
-        "আপনার দক্ষতা, বাজেট ও এলাকার তথ্য ব্যবহার করে GramSathi AI উপযুক্ত ব্যবসার ধারণা, "
-        "বিনিয়োগ পরিকল্পনা, লাভের পূর্বাভাস এবং loan guidance দেবে।"
-    )
+    st.subheader(texts["home_title"])
+    st.write(texts["home_text"])
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown('<div class="metric-card"><h3>💡 ব্যবসার ধারণা</h3><p>স্থানীয় চাহিদা ও আপনার দক্ষতার সাথে মিলিয়ে পরামর্শ।</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><h3>💡 {texts["ideas"]}</h3><p>{texts["ideas_text"]}</p></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown('<div class="metric-card"><h3>📊 আর্থিক পরিকল্পনা</h3><p>খরচ, বিক্রয়, লাভ, break-even এবং cash-flow হিসাব।</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><h3>📊 {texts["finance"]}</h3><p>{texts["finance_text"]}</p></div>', unsafe_allow_html=True)
     with col3:
-        st.markdown('<div class="metric-card"><h3>🏦 Loan সহায়তা</h3><p>ঋণের পরিমাণ, EMI এবং উপযুক্ত সরকারি scheme-এর দিকনির্দেশ।</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><h3>🏦 {texts["loan"]}</h3><p>{texts["loan_text"]}</p></div>', unsafe_allow_html=True)
 
     st.divider()
     stats = get_dashboard_stats()
-    st.subheader("Live Platform Overview")
+    st.subheader(texts["overview"])
     stat_1, stat_2, stat_3 = st.columns(3)
-    stat_1.metric("Saved entrepreneur profiles", stats["profiles"])
-    stat_2.metric("Local market surveys", stats["surveys"])
-    stat_3.metric("AI advisory status", "Active" if st.session_state.profile else "Ready")
+    stat_1.metric(texts["profiles"], stats["profiles"])
+    stat_2.metric(texts["surveys"], stats["surveys"])
+    stat_3.metric(texts["ai_status"], texts["active"] if st.session_state.profile else texts["ready"])
     st.divider()
     if st.session_state.profile:
-        st.success(f"স্বাগতম, {st.session_state.profile['name']}! আপনার profile প্রস্তুত আছে।")
-        st.info("Sidebar থেকে ‘Business Advisory’ নির্বাচন করে পরবর্তী ধাপে যান।")
+        st.success(f"{texts['welcome']}, {st.session_state.profile['name']}! {texts['profile_ready']}")
+        st.info(texts["next_advisory"])
     else:
-        st.info("শুরু করতে Sidebar থেকে ‘My Profile’ নির্বাচন করুন।")
+        st.info(texts["start_profile"])
 
 
 def show_profile() -> None:
-    st.title("👤 উদ্যোক্তার প্রোফাইল")
-    st.caption("এই তথ্য শুধু আপনার জন্য বেশি প্রাসঙ্গিক business plan তৈরিতে ব্যবহৃত হবে।")
+    texts = get_ui_texts()
+    option_sets = get_profile_option_sets()
+    st.title(f"👤 {texts['profile_title']}")
+    st.caption(texts['profile_caption'])
 
     previous = st.session_state.profile or {}
     with st.form("profile_form"):
         left, right = st.columns(2)
         with left:
-            name = st.text_input("আপনার নাম *", value=previous.get("name", ""))
-            age = st.number_input("বয়স", min_value=18, max_value=80, value=int(previous.get("age", 25)))
-            state = st.text_input("রাজ্য *", value=previous.get("state", ""), placeholder="যেমন: West Bengal")
-            district = st.text_input("জেলা *", value=previous.get("district", ""))
+            name = st.text_input(texts["name"], value=previous.get("name", ""))
+            age = st.number_input(texts["age"], min_value=18, max_value=80, value=int(previous.get("age", 25)))
+            state = st.text_input(texts["state"], value=previous.get("state", ""), placeholder="West Bengal")
+            district = st.text_input(texts["district"], value=previous.get("district", ""))
         with right:
-            village = st.text_input("গ্রাম/ব্লক", value=previous.get("village", ""))
-            education = st.selectbox("শিক্ষাগত যোগ্যতা", ["বিদ্যালয়", "উচ্চ মাধ্যমিক", "স্নাতক", "ডিপ্লোমা/ITI", "অন্যান্য"], index=["বিদ্যালয়", "উচ্চ মাধ্যমিক", "স্নাতক", "ডিপ্লোমা/ITI", "অন্যান্য"].index(previous.get("education", "উচ্চ মাধ্যমিক")))
-            budget = st.number_input("নিজের বিনিয়োগের বাজেট (₹) *", min_value=0, step=5000, value=int(previous.get("budget", 50000)))
-            experience = st.selectbox("ব্যবসার অভিজ্ঞতা", ["নেই", "0–1 বছর", "1–3 বছর", "3+ বছর"], index=["নেই", "0–1 বছর", "1–3 বছর", "3+ বছর"].index(previous.get("experience", "নেই")))
+            village = st.text_input(texts["village"], value=previous.get("village", ""))
+            education_options = option_sets["education"]
+            education = st.selectbox(texts["education"], education_options, index=education_options.index(previous.get("education", education_options[1]) if previous.get("education") in education_options else education_options[1]))
+            budget = st.number_input(texts["budget"], min_value=0, step=5000, value=int(previous.get("budget", 50000)))
+            experience_options = option_sets["experience"]
+            experience = st.selectbox(texts["experience"], experience_options, index=experience_options.index(previous.get("experience", experience_options[0]) if previous.get("experience") in experience_options else experience_options[0]))
 
         skills = st.multiselect(
-            "আপনার দক্ষতা", 
-            ["কৃষি", "পশুপালন", "সেলাই/হস্তশিল্প", "খাদ্য তৈরি", "মেরামত", "ডিজিটাল সেবা", "বিক্রয়", "শিক্ষাদান"],
-            default=previous.get("skills", []),
+            texts["skills"],
+            option_sets["skills"],
+            default=[skill for skill in previous.get("skills", []) if skill in option_sets["skills"]],
         )
         interests = st.multiselect(
-            "কোন ধরনের ব্যবসায় আগ্রহী?",
-            ["কৃষিভিত্তিক", "খাদ্য প্রক্রিয়াজাতকরণ", "হস্তশিল্প", "খুচরা বিক্রয়", "সেবা", "পশুপালন"],
-            default=previous.get("interests", []),
+            texts["interests"],
+            option_sets["interests"],
+            default=[interest for interest in previous.get("interests", []) if interest in option_sets["interests"]],
         )
-        submitted = st.form_submit_button("প্রোফাইল সংরক্ষণ করুন →")
+        submitted = st.form_submit_button(texts["save_profile"])
 
     if submitted:
         if not name.strip() or not state.strip() or not district.strip() or budget <= 0:
@@ -168,34 +259,55 @@ def show_profile() -> None:
             st.success("প্রোফাইল সফলভাবে সংরক্ষণ করা হয়েছে! এখন Business Advisory পেজে যান।")
 
 
-def get_recommendations(profile: dict) -> list[tuple[int, dict]]:
+def get_recommendations(profile: dict, search_query: str = "", category_filter: str = "সব") -> list[tuple[int, dict]]:
     recommendations = []
+    query = search_query.strip().lower()
     for business in BUSINESSES:
+        if category_filter != "সব" and business["category"] != category_filter:
+            continue
+        searchable = f"{business['name']} {business['category']} {business['keywords']}".lower()
+        if query and query not in searchable:
+            continue
         score = 0
         if business["investment"] <= profile["budget"]:
-            score += 45
+            score += 45 + min(20, round(business["investment"] / profile["budget"] * 20))
         else:
-            score += max(0, 25 - int((business["investment"] - profile["budget"]) / 10000) * 5)
-        score += 25 * len(set(profile["skills"]).intersection(business["skills"]))
+            shortfall = business["investment"] - profile["budget"]
+            score += max(0, 30 - int(shortfall / 10000) * 8)
+        score += 12 * len(set(profile["skills"]).intersection(business["skills"]))
         if business["category"] in profile["interests"]:
             score += 25
+        if query:
+            score += 30
         if profile["experience"] != "নেই":
             score += 5
         recommendations.append((min(score, 100), business))
-    return sorted(recommendations, key=lambda item: item[0], reverse=True)[:3]
+    return sorted(recommendations, key=lambda item: item[0], reverse=True)
 
 
 def show_business_advisory() -> None:
-    st.title("💡 আপনার জন্য ব্যবসার পরামর্শ")
+    texts = get_ui_texts()
+    st.title(f"💡 {texts['advisory']}")
     if not st.session_state.profile:
         st.warning("আগে ‘My Profile’ পেজ থেকে প্রোফাইল সম্পূর্ণ করুন।")
         return
 
     profile = st.session_state.profile
-    st.write(f"**{profile['name']}**, {profile['district']}, {profile['state']} এবং আপনার ₹{profile['budget']:,} বাজেট অনুযায়ী সেরা তিনটি পরামর্শ:")
-    st.caption("Match score নির্ধারিত হয়েছে আপনার বাজেট, দক্ষতা, আগ্রহ এবং ব্যবসার অভিজ্ঞতা থেকে।")
+    st.write(f"**{profile['name']}**, আমাদের catalog-এ **{len(BUSINESSES):,}+ business advisory plan** আছে। আপনার ₹{profile['budget']:,} বাজেট অনুযায়ী search করুন:")
+    search_col, category_col = st.columns([2, 1])
+    with search_col:
+        search_query = st.text_input("নিজের পছন্দের business search করুন", placeholder="যেমন: মাছ, মাশরুম, দোকান, tailoring, mobile repair")
+    with category_col:
+        categories = ["সব"] + sorted({item["category"] for item in BUSINESSES})
+        category_filter = st.selectbox("Business category", categories)
+    recommendations = get_recommendations(profile, search_query, category_filter)
+    st.caption("Match score নির্ধারিত হয়েছে আপনার বাজেট, দক্ষতা, আগ্রহ, search এবং ব্যবসার অভিজ্ঞতা থেকে। Budget বদলালে ranking-ও বদলাবে।")
+    if not recommendations:
+        st.warning("এই নামে কোনো plan পাওয়া যায়নি। অন্য keyword দিয়ে চেষ্টা করুন—যেমন মাছ, মাশরুম, দোকান, সেলাই বা digital।")
+        return
+    st.info(f"{len(recommendations):,}টি matching plan পাওয়া গেছে। সেরা 12টি দেখানো হচ্ছে।")
 
-    for index, (score, business) in enumerate(get_recommendations(profile), start=1):
+    for index, (score, business) in enumerate(recommendations[:12], start=1):
         with st.container(border=True):
             title_col, score_col = st.columns([4, 1])
             with title_col:
@@ -207,13 +319,14 @@ def show_business_advisory() -> None:
             c1.write(f"**প্রাথমিক বিনিয়োগ:** ₹{business['investment']:,}")
             c2.write(f"**সম্ভাব্য মাসিক লাভ:** ₹{business['monthly_profit']:,}")
             c3.write(f"**ঝুঁকি:** {business['risk']}")
-            if st.button(f"এই ব্যবসাটি বেছে নিন", key=f"select_{index}"):
+            if st.button(f"এই ব্যবসাটি বেছে নিন", key=f"select_{business['name']}"):
                 st.session_state.selected_business = business
                 st.success(f"‘{business['name']}’ নির্বাচন করা হয়েছে। এবার Financial Plan খুলুন।")
 
 
 def show_market_analysis() -> None:
-    st.title("📍 Hyper-Local Market Analysis")
+    texts = get_ui_texts()
+    st.title(f"📍 {texts['market']}")
     if not st.session_state.profile or not st.session_state.selected_business:
         st.warning("আগে Profile পূরণ করে একটি business নির্বাচন করুন।")
         return
@@ -262,6 +375,124 @@ def show_market_analysis() -> None:
             st.info("প্রতিযোগী তুলনামূলক কম। দ্রুত customer feedback সংগ্রহ করে ছোট pilot শুরু করা ভালো হবে।")
         if data["notes"]:
             st.write(f"**Survey note:** {data['notes']}")
+
+
+def show_voice_assistant() -> None:
+    st.title("🎙️ GramSathi Voice Assistant")
+    st.write("যাঁদের পড়তে অসুবিধা হয়, তাঁরা বাংলায় কথা বলে সাহায্য নিতে পারবেন। নিচের button চাপুন, microphone permission দিন, তারপর প্রশ্ন করুন।")
+    st.info("উদাহরণ: ‘প্রোফাইল কীভাবে পূরণ করব?’, ‘কম টাকায় ব্যবসা চাই’, ‘loan-এর তথ্য চাই’, বা ‘মাশরুম ব্যবসা খুঁজুন’।")
+
+    components.html(
+        """
+        <style>
+          body { font-family: sans-serif; background: #f7faf5; margin: 0; color: #193526; }
+          .box { background: white; border: 1px solid #d9e7d6; border-radius: 16px; padding: 22px; }
+          button { background: #28734c; color: white; border: 0; border-radius: 9px; font-size: 18px; font-weight: 700; padding: 13px 22px; cursor: pointer; }
+          #heard { margin-top: 18px; background: #edf6ea; border-radius: 8px; padding: 12px; min-height: 24px; }
+          #reply { margin-top: 12px; background: #fff5dc; border-radius: 8px; padding: 12px; min-height: 38px; line-height: 1.5; }
+          .tip { color: #526256; font-size: 14px; }
+        </style>
+        <div class="box">
+          <label for="language"><b>ভাষা / भाषा / Language</b></label><br><br>
+          <select id="language" style="font-size:16px;padding:8px;margin-bottom:12px">
+            <option value="bn-IN">বাংলা</option>
+            <option value="hi-IN">हिंदी</option>
+            <option value="en-IN">English</option>
+          </select><br>
+          <button onclick="startListening()">🎤 কথা বলুন / बोलें / Speak</button>
+          <p class="tip">নিজের ভাষা বেছে নিয়ে button চাপুন। Chrome browser ব্যবহার করলে সবচেয়ে ভালো কাজ করবে।</p>
+          <div id="heard">আপনার কথা এখানে লেখা দেখা যাবে।</div>
+          <div id="reply">আমি কীভাবে সাহায্য করতে পারি?</div>
+        </div>
+        <script>
+          const messages = {
+            'bn-IN': {
+              listening: 'শুনছি... এখন বাংলায় বলুন।', heard: 'আপনি বলেছেন: ', prefix: 'GramSathi বলছে: ',
+              profile: 'বাঁ পাশের মেনু থেকে মাই প্রোফাইল খুলুন। নাম, জেলা, বাজেট ও দক্ষতা দিয়ে প্রোফাইল সংরক্ষণ করুন।',
+              loan: 'ফিনান্সিয়াল প্ল্যান পেজে গিয়ে লোনের পরিমাণ, সুদের হার ও সময়কাল দিলে মাসিক ইএমআই দেখা যাবে।',
+              business: 'আগে প্রোফাইল পূরণ করুন। এরপর বিজনেস অ্যাডভাইজরি পেজে আপনার বাজেট অনুযায়ী ব্যবসা খুঁজুন।',
+              fallback: 'আমি প্রোফাইল, ব্যবসার পরামর্শ, লোন ও সরকারি স্কিম নিয়ে সাহায্য করতে পারি। আবার সহজ করে বলুন।',
+              error: 'শোনা যায়নি। Microphone permission দিন এবং আবার চেষ্টা করুন।'
+            },
+            'hi-IN': {
+              listening: 'सुन रहा हूँ... अब हिंदी में बोलें।', heard: 'आपने कहा: ', prefix: 'GramSathi कहता है: ',
+              profile: 'बाईं ओर माई प्रोफाइल खोलें। नाम, जिला, बजट और कौशल भरकर प्रोफाइल सेव करें।',
+              loan: 'फाइनेंशियल प्लान पेज में लोन राशि, ब्याज दर और अवधि भरने पर मासिक ईएमआई दिखेगी।',
+              business: 'पहले प्रोफाइल भरें। फिर बिजनेस एडवाइजरी पेज पर अपने बजट के अनुसार व्यवसाय खोजें।',
+              fallback: 'मैं प्रोफाइल, व्यवसाय सलाह, लोन और सरकारी योजनाओं में मदद कर सकता हूँ। कृपया फिर से बोलें।',
+              error: 'आवाज़ सुनाई नहीं दी। माइक्रोफोन की अनुमति दें और फिर कोशिश करें।'
+            },
+            'en-IN': {
+              listening: 'Listening... please speak in English.', heard: 'You said: ', prefix: 'GramSathi says: ',
+              profile: 'Open My Profile from the left menu. Enter your name, district, budget and skills, then save your profile.',
+              loan: 'Open Financial Plan and enter the loan amount, interest rate and duration to see the monthly EMI.',
+              business: 'Complete your profile first. Then search for businesses matching your budget on the Business Advisory page.',
+              fallback: 'I can help with profiles, business advice, loans and government schemes. Please say it again simply.',
+              error: 'I could not hear you. Allow microphone permission and try again.'
+            }
+          };
+          function speak(text, language) {
+            window.speechSynthesis.cancel();
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = language;
+            speech.rate = 0.9;
+            window.speechSynthesis.speak(speech);
+          }
+          function getReply(query, language) {
+            const message = messages[language];
+            if (/প্রোফাইল|नाम|प्रोफाइल|profile|তথ্য|जानकारी|information/.test(query)) return message.profile;
+            if (/লোন|ঋণ|ईएमआई|लोन|loan|emi|इएमआई/.test(query)) return message.loan;
+            if (/ব্যবসা|মাশরুম|মাছ|business|mushroom|fish|व्यवसाय|मशरूम|मछली/.test(query)) return message.business;
+            return message.fallback;
+          }
+          function startListening() {
+            const language = document.getElementById('language').value;
+            const message = messages[language];
+            const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Recognition) {
+              document.getElementById('reply').innerText = 'Voice recognition is unavailable. Please use Google Chrome.';
+              return;
+            }
+            const recognition = new Recognition();
+            recognition.lang = language;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            document.getElementById('heard').innerText = message.listening;
+            recognition.start();
+            recognition.onresult = function(event) {
+              const text = event.results[0][0].transcript;
+              const reply = getReply(text.toLowerCase(), language);
+              document.getElementById('heard').innerText = message.heard + text;
+              document.getElementById('reply').innerText = message.prefix + reply;
+              speak(reply, language);
+            };
+            recognition.onerror = function() {
+              document.getElementById('reply').innerText = message.error;
+            };
+          }
+        </script>
+        """,
+        height=360,
+    )
+
+    st.divider()
+    st.subheader("🤖 যেকোনো প্রশ্নের AI উত্তর")
+    st.write("গরু পালন, মাছ চাষ, ব্যবসার খরচ, বাজার, loan বা অন্য যেকোনো প্রশ্ন বলুন বা লিখুন। প্রশ্ন যে ভাষায় করবেন, AI ঠিক সেই ভাষাতেই উত্তর দেবে।")
+    question = st.text_area("প্রশ্ন লিখুন (ঐচ্ছিক)", placeholder="যেমন: গরু পালন শুরু করার নিয়ম বলুন", key="voice_question")
+    audio_file = st.audio_input("অথবা প্রশ্নটি record করুন", key="voice_audio")
+    if st.button("✨ AI থেকে উত্তর নিন", key="generate_voice_advice"):
+        if not question.strip() and audio_file is None:
+            st.warning("প্রশ্ন লিখুন অথবা voice record করুন।")
+        else:
+            try:
+                with st.spinner("আপনার প্রশ্ন বুঝে উত্তর তৈরি হচ্ছে..."):
+                    answer = get_multilingual_voice_advice(question.strip(), audio_file)
+                st.subheader("GramSathi AI-এর উত্তর")
+                st.markdown(answer)
+                render_speak_button(answer)
+            except Exception as error:
+                st.error("এই মুহূর্তে AI উত্তর তৈরি করা যায়নি। Internet connection, API key ও quota যাচাই করুন।")
+                st.caption(f"Technical detail: {error}")
 
 
 def calculate_emi(principal: float, annual_rate: float, months: int) -> float:
@@ -349,8 +580,79 @@ Give specific but realistic advice. Mention that local prices and scheme eligibi
     return response.text
 
 
+def get_multilingual_voice_advice(question: str, audio_file=None) -> str:
+    """Answer recorded or typed rural-enterprise questions in the selected language."""
+    from google import genai
+    from google.genai import types
+
+    api_key = st.secrets.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("Gemini API key পাওয়া যায়নি।")
+
+    prompt = f"""
+You are GramSathi AI, a safe and practical rural micro-enterprise advisor in India.
+Detect the language spoken or written by the user. Reply in exactly that same language: Bengali for Bengali, Hindi for Hindi, and English for English. If it is mixed, use the dominant language.
+Use simple words for a first-time rural entrepreneur.
+Answer the user's business, farming, loan, market, or government-scheme question with clear steps.
+Mark costs as estimates, never guarantee profit/loan/subsidy, and say to verify local rules.
+For animal farming include clean water, vaccination, veterinary advice, and hygiene where relevant.
+Typed question: {question or 'No typed question; understand the recorded audio.'}
+"""
+    contents = [prompt]
+    if audio_file is not None:
+        contents.append(types.Part.from_bytes(data=audio_file.getvalue(), mime_type=audio_file.type or "audio/wav"))
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model="gemini-3.6-flash", contents=contents)
+    if not response.text:
+        raise RuntimeError("AI কোনো উত্তর দেয়নি।")
+    return response.text
+
+
+def render_speak_button(answer: str) -> None:
+    if any(0x0980 <= ord(char) <= 0x09FF for char in answer):
+        language_code = "bn-IN"
+    elif any(0x0900 <= ord(char) <= 0x097F for char in answer):
+        language_code = "hi-IN"
+    else:
+        language_code = "en-IN"
+    components.html(
+        f"""
+        <button onclick="speakAnswer()" style="background:#28734c;color:white;border:0;border-radius:8px;padding:10px 15px;font-weight:700;cursor:pointer">🔊 শুনুন</button>
+        <button id="pauseButton" onclick="togglePause()" style="background:#d98b22;color:white;border:0;border-radius:8px;padding:10px 15px;font-weight:700;cursor:pointer;margin-left:8px">⏸ Pause</button>
+        <button onclick="stopAnswer()" style="background:#a93c32;color:white;border:0;border-radius:8px;padding:10px 15px;font-weight:700;cursor:pointer;margin-left:8px">⏹ Stop</button>
+        <script>
+          let currentUtterance = null;
+          function speakAnswer() {{
+            window.speechSynthesis.cancel();
+            currentUtterance = new SpeechSynthesisUtterance({json.dumps(answer)});
+            currentUtterance.lang = {json.dumps(language_code)};
+            currentUtterance.rate = 0.88;
+            currentUtterance.onend = () => document.getElementById('pauseButton').innerText = '⏸ Pause';
+            window.speechSynthesis.speak(currentUtterance);
+            document.getElementById('pauseButton').innerText = '⏸ Pause';
+          }}
+          function togglePause() {{
+            if (window.speechSynthesis.paused) {{
+              window.speechSynthesis.resume();
+              document.getElementById('pauseButton').innerText = '⏸ Pause';
+            }} else if (window.speechSynthesis.speaking) {{
+              window.speechSynthesis.pause();
+              document.getElementById('pauseButton').innerText = '▶ Resume';
+            }}
+          }}
+          function stopAnswer() {{
+            window.speechSynthesis.cancel();
+            document.getElementById('pauseButton').innerText = '⏸ Pause';
+          }}
+        </script>
+        """,
+        height=55,
+    )
+
+
 def show_financial_plan() -> None:
-    st.title("📊 Financial Plan")
+    texts = get_ui_texts()
+    st.title(f"📊 {texts['financial']}")
     business = st.session_state.selected_business
     profile = st.session_state.profile
     if not profile:
@@ -410,7 +712,8 @@ def show_financial_plan() -> None:
 
 
 def show_schemes_loan() -> None:
-    st.title("🏦 Schemes & Loan Guidance")
+    texts = get_ui_texts()
+    st.title(f"🏦 {texts['schemes']}")
     profile = st.session_state.profile
     business = st.session_state.selected_business
     if not profile:
@@ -442,7 +745,8 @@ def show_schemes_loan() -> None:
 
 
 def show_ai_business_plan() -> None:
-    st.title("🤖 AI Business Plan")
+    texts = get_ui_texts()
+    st.title(f"🤖 {texts['ai_plan']}")
     profile = st.session_state.profile
     business = st.session_state.selected_business
     if not profile or not business:
@@ -519,27 +823,32 @@ def main() -> None:
     initialise_database()
     inject_css()
     initialise_state()
+    texts = get_ui_texts()
     with st.sidebar:
         st.title("🌾 GramSathi AI")
-        st.caption("Rural Enterprise Navigator")
-        page = st.radio("Menu", ["Home", "My Profile", "Business Advisory", "Local Market Analysis", "Financial Plan", "Schemes & Loan", "AI Business Plan"])
+        st.caption(texts["tagline"])
+        st.selectbox(texts["language"], LANGUAGE_OPTIONS, index=LANGUAGE_OPTIONS.index(st.session_state.get("language", "বাংলা")), key="language")
+        texts = get_ui_texts()
+        page = st.radio(texts["menu"], [texts["home"], texts["profile"], texts["advisory"], texts["market"], texts["financial"], texts["schemes"], texts["ai_plan"], texts["voice"]])
         st.divider()
         st.caption("SIH 2026 • Python + Streamlit")
 
-    if page == "Home":
+    if page == texts["home"]:
         show_home()
-    elif page == "My Profile":
+    elif page == texts["profile"]:
         show_profile()
-    elif page == "Business Advisory":
+    elif page == texts["advisory"]:
         show_business_advisory()
-    elif page == "Local Market Analysis":
+    elif page == texts["market"]:
         show_market_analysis()
-    elif page == "Financial Plan":
+    elif page == texts["financial"]:
         show_financial_plan()
-    elif page == "Schemes & Loan":
+    elif page == texts["schemes"]:
         show_schemes_loan()
-    else:
+    elif page == texts["ai_plan"]:
         show_ai_business_plan()
+    else:
+        show_voice_assistant()
 
 
 if __name__ == "__main__":
