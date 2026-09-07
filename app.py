@@ -7,42 +7,78 @@ from business_catalog import generate_business_catalog
 from database import get_dashboard_stats, initialise_database, save_market_survey, save_profile
 from translations import UI
 
-BUSINESSES = [
-    {
-        "name": "ছাগল পালন", "category": "পশুপালন", "investment": 45000,
-        "monthly_profit": 6500, "risk": "মাঝারি", "skills": ["পশুপালন", "কৃষি"],
-        "summary": "কম জায়গায় শুরু করা যায় এবং স্থানীয় বাজারে নিয়মিত চাহিদা থাকে।",
-    },
-    {
-        "name": "মাশরুম চাষ", "category": "কৃষিভিত্তিক", "investment": 30000,
-        "monthly_profit": 8000, "risk": "কম", "skills": ["কৃষি", "খাদ্য তৈরি"],
-        "summary": "অল্প জায়গা ও কম পুঁজিতে দ্রুত উৎপাদন সম্ভব; হোটেল ও বাজারে বিক্রি করা যায়।",
-    },
-    {
-        "name": "মশলা ও আচার প্রক্রিয়াজাতকরণ", "category": "খাদ্য প্রক্রিয়াজাতকরণ", "investment": 35000,
-        "monthly_profit": 7500, "risk": "কম", "skills": ["খাদ্য তৈরি", "বিক্রয়"],
-        "summary": "ঘরে বসে শুরু করা যায় এবং স্থানীয় দোকান ও online channel-এ বিক্রির সুযোগ আছে।",
-    },
-    {
-        "name": "সেলাই ও পোশাক তৈরির কেন্দ্র", "category": "হস্তশিল্প", "investment": 40000,
-        "monthly_profit": 9000, "risk": "কম", "skills": ["সেলাই/হস্তশিল্প", "বিক্রয়"],
-        "summary": "স্কুল ইউনিফর্ম, ব্লাউজ ও ছোট পোশাকের স্থানীয় চাহিদাকে কাজে লাগানো যায়।",
-    },
-    {
-        "name": "ডিজিটাল সেবা কেন্দ্র", "category": "সেবা", "investment": 55000,
-        "monthly_profit": 10000, "risk": "মাঝারি", "skills": ["ডিজিটাল সেবা", "বিক্রয়"],
-        "summary": "Online form, print, photocopy, bill payment ও সরকারি পরিষেবা দেওয়া যাবে।",
-    },
-    {
-        "name": "কৃষি যন্ত্র ভাড়া পরিষেবা", "category": "কৃষিভিত্তিক", "investment": 100000,
-        "monthly_profit": 14000, "risk": "মাঝারি", "skills": ["কৃষি", "মেরামত"],
-        "summary": "কৃষকদের কাছে sprayer ও ছোট কৃষিযন্ত্র ভাড়া দিয়ে নিয়মিত আয় করা যায়।",
-    },
-]
-
-# 1,080 budget-scale and market-specific advisory plans.
+# 1,080 budget-scale and market-specific advisory plans loaded for the active selected language.
 BUSINESSES = generate_business_catalog()
 LANGUAGE_OPTIONS = ["বাংলা", "English", "हिंदी"]
+GEMINI_MODEL = "gemini-3.6-flash"
+
+BUSINESS_NAME_TRANSLATIONS = {
+    "ছাগল পালন": "Goat rearing",
+    "মাশরুম চাষ": "Mushroom farming",
+    "দেশি মুরগি পালন": "Indigenous poultry farming",
+    "দুগ্ধজাত পণ্য": "Dairy products",
+    "মশলা ও আচার প্রক্রিয়াজাতকরণ": "Spice and pickle processing",
+    "বেকারি ও স্ন্যাকস": "Bakery and snacks",
+    "সেলাই ও পোশাক তৈরির কেন্দ্র": "Tailoring and garment unit",
+    "জুট ও বাঁশের হস্তশিল্প": "Jute and bamboo handicraft",
+    "ডিজিটাল সেবা কেন্দ্র": "Digital service centre",
+    "মোবাইল মেরামত কেন্দ্র": "Mobile repair centre",
+    "কৃষি যন্ত্র ভাড়া পরিষেবা": "Farm equipment rental service",
+    "জৈব সার ও ভার্মি কম্পোস্ট": "Organic fertiliser and vermicompost",
+    "মাছ চাষ": "Fish farming",
+    "নার্সারি ও চারা বিক্রি": "Nursery and sapling sales",
+    "কিরানা ও দৈনন্দিন পণ্যের দোকান": "Kirana and daily essentials store",
+    "সৌর আলো ও ছোট electrical service": "Solar lighting and small electrical service",
+    "টিউশন ও skill training centre": "Tuition and skill training centre",
+    "বিউটি ও wellness service": "Beauty and wellness service",
+}
+
+CATEGORY_TRANSLATIONS = {
+    "পশুপালন": "Livestock",
+    "কৃষিভিত্তিক": "Agri-based",
+    "খাদ্য প্রক্রিয়াজাতকরণ": "Food processing",
+    "হস্তশিল্প": "Handicraft",
+    "সেবা": "Service",
+    "খুচরা বিক্রয়": "Retail sales",
+}
+
+SKILL_TRANSLATIONS = {
+    "কৃষি": "Agriculture",
+    "পশুপালন": "Livestock",
+    "সেলাই/হস্তশিল্প": "Tailoring/Handicraft",
+    "খাদ্য তৈরি": "Food processing",
+    "মেরামত": "Repair",
+    "ডিজিটাল সেবা": "Digital service",
+    "বিক্রয়": "Sales",
+    "শিক্ষাদান": "Teaching",
+}
+
+RISK_TRANSLATIONS = {
+    "কম": "Low",
+    "মাঝারি": "Moderate",
+    "মাঝারি থেকে বেশি": "Moderate to high",
+}
+
+SUMMARY_TRANSLATIONS = {
+    "কম জায়গায় শুরু করা যায় এবং স্থানীয় বাজারে নিয়মিত চাহিদা থাকে।": "It can start in a small space and has steady local demand.",
+    "অল্প জায়গা ও কম পুঁজিতে দ্রুত উৎপাদন সম্ভব; হোটেল ও বাজারে বিক্রি করা যায়।": "Production is fast even in a small area and can be sold to hotels and local markets.",
+    "ডিম ও দেশি মুরগির স্থানীয় চাহিদা ব্যবহার করা যায়।": "Local demand for eggs and native poultry can be used effectively.",
+    "দুধ, দই ও ঘি বিক্রি করে মূল্য সংযোজন করা যায়।": "Value can be added by selling milk, yogurt and ghee.",
+    "ঘরে বসে তৈরি করে দোকান ও online channel-এ বিক্রি করা যায়।": "It can be made at home and sold through shops and online channels.",
+    "চা-দোকান, স্কুল ও হাটে প্রতিদিনের বিক্রির সুযোগ আছে।": "There is daily sales potential in tea shops, schools and local markets.",
+    "স্কুল ইউনিফর্ম, ব্লাউজ ও ছোট পোশাকের স্থানীয় চাহিদাকে কাজে লাগানো যায়।": "Local demand for school uniforms, blouses and small garments can be captured.",
+    "পরিবেশবান্ধব পণ্য স্থানীয় মেলা ও online-এ বিক্রি করা যায়।": "Eco-friendly products can be sold at local fairs and online.",
+    "online form, print, bill payment ও সরকারি পরিষেবা দেওয়া যাবে।": "Online forms, printing, bill payment and government services can be offered.",
+    "গ্রামে মোবাইল servicing ও accessories বিক্রি করা যায়।": "Mobile servicing and accessories can be sold in the village.",
+    "কৃষকদের কাছে sprayer ও ছোট কৃষিযন্ত্র ভাড়া দিয়ে নিয়মিত আয় করা যায়।": "Regular income can be earned by renting sprayers and small farm tools to farmers.",
+    "কৃষকদের জন্য কম খরচের জৈব সার তৈরি ও বিক্রি করা যায়।": "Low-cost organic fertiliser can be produced and sold to farmers.",
+    "পুকুর বা leased জলাশয়ে মাছ চাষ করে বাজারে বিক্রি করা যায়।": "Fish can be farmed in ponds or leased water bodies and sold in the market.",
+    "সবজি, ফল ও ফুলের চারা স্থানীয় কৃষক ও বাড়িতে বিক্রি করা যায়।": "Seedlings for vegetables, fruits and flowers can be sold to local farmers and households.",
+    "দৈনন্দিন প্রয়োজনের পণ্যে নিয়মিত customer পাওয়া যায়।": "There is a steady customer base for everyday essential items.",
+    "solar light, wiring ও ছোট electrical repair-এর পরিষেবা দেওয়া যায়।": "Solar lights, wiring and small electrical repair services can be offered.",
+    "স্কুলপড়ুয়া ও যুবকদের জন্য tuition বা computer skill class চালানো যায়।": "Tuition or computer skill classes can be run for school students and youth.",
+    "বাড়ি বা ছোট salon থেকে appointment-based পরিষেবা দেওয়া যায়।": "Appointment-based services can be provided from home or a small salon.",
+}
 
 
 def get_ui_texts() -> dict:
@@ -64,32 +100,34 @@ def inject_css() -> None:
         """
         <style>
             .stApp {
-                background: #f7faf5;
-                color: #1d2b20;
+                background: #f5f7f5;
+                color: #1f2a24;
             }
             [data-testid="stSidebar"] {
-                background: #123b2a;
+                background: #edf1ee;
+                border-right: 1px solid #dfe7e1;
             }
             [data-testid="stSidebar"] * {
-                color: #f7fff6 !important;
+                color: #1d2d28 !important;
             }
             .stMain > div {
-                background: #f7faf5;
-                color: #1d2b20;
+                background: #f7f9f8;
+                color: #1f2a24;
             }
             .hero {
                 padding: 2rem; border-radius: 18px;
-                background: linear-gradient(120deg, #123b2a, #28734c);
-                color: white; margin-bottom: 1.5rem;
+                background: linear-gradient(120deg, #eef4ef, #e6efe9);
+                color: #1d2d28; margin-bottom: 1.5rem;
+                border: 1px solid #d9e5dc;
             }
-            .hero h1 { margin: 0; font-size: 2.3rem; color: white !important; }
-            .hero p { margin: .5rem 0 0; font-size: 1.05rem; opacity: .92; color: white !important; }
+            .hero h1 { margin: 0; font-size: 2.3rem; color: #1c2a24 !important; }
+            .hero p { margin: .5rem 0 0; font-size: 1.05rem; opacity: .92; color: #33483f !important; }
             .metric-card {
                 background: white; border-radius: 14px; padding: 1.1rem;
-                border: 1px solid #e2eadf; min-height: 105px;
+                border: 1px solid #e2e7e3; min-height: 105px;
             }
-            .metric-card h3 { color: #28734c; margin: 0 0 .35rem; }
-            .metric-card p { color: #516156; margin: 0; }
+            .metric-card h3 { color: #1d5d46; margin: 0 0 .35rem; }
+            .metric-card p { color: #4d5f57; margin: 0; }
 
             .stTextInput > label,
             .stNumberInput > label,
@@ -97,7 +135,7 @@ def inject_css() -> None:
             .stMultiSelect > label,
             .stTextArea > label,
             .stForm > div > div > label {
-                color: #1d3f2f !important;
+                color: #21332c !important;
                 font-weight: 600;
             }
 
@@ -107,23 +145,23 @@ def inject_css() -> None:
             .stSelectbox div[role="combobox"],
             .stMultiSelect div[role="combobox"] {
                 background: white !important;
-                color: #1d2b20 !important;
-                border: 1px solid #b8d2bf !important;
+                color: #1f2a24 !important;
+                border: 1px solid #cbd7cf !important;
                 border-radius: 10px !important;
             }
 
             .stTextInput input::placeholder,
             .stTextArea textarea::placeholder {
-                color: #6b7a6e !important;
+                color: #6d7b75 !important;
             }
 
             .stButton > button {
-                background: #e4a83c; color: #1c2c20; border: none;
+                background: #1f7a5c; color: white; border: none;
                 border-radius: 8px; font-weight: 700; padding: .55rem 1rem;
             }
-            .stButton > button p { color: #1c2c20 !important; }
+            .stButton > button p { color: white !important; }
             .stButton > button:hover {
-                background: #d89b1e;
+                background: #18664b;
             }
         </style>
         """,
@@ -144,6 +182,11 @@ def initialise_state() -> None:
 
 def get_ui_texts() -> dict:
     return UI.get(st.session_state.get("language", "বাংলা"), UI["বাংলা"])
+
+
+def get_business_catalog_for_language(language: str | None = None) -> list[dict]:
+    language = language or st.session_state.get("language", "বাংলা")
+    return generate_business_catalog(language)
 
 
 def get_profile_option_sets() -> dict:
@@ -248,7 +291,7 @@ def show_profile() -> None:
 
     if submitted:
         if not name.strip() or not state.strip() or not district.strip() or budget <= 0:
-            st.error("নাম, রাজ্য, জেলা এবং শূন্যের বেশি বাজেট দেওয়া বাধ্যতামূলক।")
+            st.error(texts.get("profile_error", "Name, state, district and a budget greater than zero are required."))
         else:
             st.session_state.profile = {
                 "name": name.strip(), "age": age, "state": state.strip(), "district": district.strip(),
@@ -256,15 +299,41 @@ def show_profile() -> None:
                 "experience": experience, "skills": skills, "interests": interests,
             }
             save_profile(st.session_state.profile)
-            st.success("প্রোফাইল সফলভাবে সংরক্ষণ করা হয়েছে! এখন Business Advisory পেজে যান।")
+            st.success(texts.get("profile_saved", "Profile saved successfully! Go to the Business Advisory page next."))
 
 
 def get_recommendations(profile: dict, search_query: str = "", category_filter: str = "সব") -> list[tuple[int, dict]]:
     recommendations = []
     query = search_query.strip().lower()
-    for business in BUSINESSES:
-        if category_filter != "সব" and business["category"] != category_filter:
-            continue
+    language = st.session_state.get("language", "বাংলা")
+    businesses = get_business_catalog_for_language(language)
+    all_label = {"বাংলা": "সব", "English": "All", "हिंदी": "सभी"}.get(language, "সব")
+    experience_values = {"বাংলা": {"নেই"}, "English": {"None"}, "हिंदी": {"कोई नहीं"}}
+    category_aliases = {
+        "কৃষিভিত্তিক": {"Agri-based", "कृषि आधारित"},
+        "খাদ্য প্রক্রিয়াজাতকরণ": {"Food processing", "खाद्य प्रसंस्करण"},
+        "হস্তশিল্প": {"Handicraft", "हस्तशिल्प"},
+        "খুচরা বিক্রয়": {"Retail sales", "रिटेल बिक्री"},
+        "সেবা": {"Service", "सेवा"},
+        "পশুপালন": {"Livestock", "पशुधन"},
+        "Agri-based": {"Agri-based", "কৃষিভিত্তিক", "कृषि आधारित"},
+        "Food processing": {"Food processing", "খাদ্য প্রক্রিয়াজাতকরণ", "खाद्य प्रसंस्करण"},
+        "Handicraft": {"Handicraft", "হস্তশিল্প", "हस्तशिल्प"},
+        "Retail sales": {"Retail sales", "খুচরা বিক্রয়", "रिटेल बिक्री"},
+        "Service": {"Service", "সেবা", "सेवा"},
+        "Livestock": {"Livestock", "পশুপালন", "पशुधन"},
+    }
+    profile_interests = set()
+    for interest in profile.get("interests", []):
+        canonical = category_aliases.get(interest, {interest})
+        profile_interests |= canonical
+        profile_interests.add(interest)
+    for business in businesses:
+        business_category = business["category"]
+        if category_filter != all_label:
+            normalized = category_aliases.get(business_category, {business_category})
+            if category_filter not in normalized and category_filter not in {business_category}:
+                continue
         searchable = f"{business['name']} {business['category']} {business['keywords']}".lower()
         if query and query not in searchable:
             continue
@@ -275,11 +344,11 @@ def get_recommendations(profile: dict, search_query: str = "", category_filter: 
             shortfall = business["investment"] - profile["budget"]
             score += max(0, 30 - int(shortfall / 10000) * 8)
         score += 12 * len(set(profile["skills"]).intersection(business["skills"]))
-        if business["category"] in profile["interests"]:
+        if business_category in profile_interests or any(item in profile_interests for item in category_aliases.get(business_category, {business_category})):
             score += 25
         if query:
             score += 30
-        if profile["experience"] != "নেই":
+        if profile.get("experience") not in experience_values.get(language, {"নেই"}):
             score += 5
         recommendations.append((min(score, 100), business))
     return sorted(recommendations, key=lambda item: item[0], reverse=True)
@@ -289,23 +358,25 @@ def show_business_advisory() -> None:
     texts = get_ui_texts()
     st.title(f"💡 {texts['advisory']}")
     if not st.session_state.profile:
-        st.warning("আগে ‘My Profile’ পেজ থেকে প্রোফাইল সম্পূর্ণ করুন।")
+        st.warning(texts.get("startup_prompt", "Please complete your profile from the My Profile page first."))
         return
 
     profile = st.session_state.profile
-    st.write(f"**{profile['name']}**, আমাদের catalog-এ **{len(BUSINESSES):,}+ business advisory plan** আছে। আপনার ₹{profile['budget']:,} বাজেট অনুযায়ী search করুন:")
+    st.write(f"**{profile['name']}**, {texts.get('budget_prompt', 'Your budget is ₹{budget:,}. Search by business name or sector.').format(budget=profile['budget'])}")
     search_col, category_col = st.columns([2, 1])
     with search_col:
-        search_query = st.text_input("নিজের পছন্দের business search করুন", placeholder="যেমন: মাছ, মাশরুম, দোকান, tailoring, mobile repair")
+        search_query = st.text_input(texts.get("search_business", "Search for your preferred business"), placeholder=texts.get("search_placeholder", "Example: fish, mushroom, shop, tailoring, mobile repair"))
     with category_col:
-        categories = ["সব"] + sorted({item["category"] for item in BUSINESSES})
-        category_filter = st.selectbox("Business category", categories)
+        language = st.session_state.get("language", "বাংলা")
+        all_label = {"বাংলা": "সব", "English": "All", "हिंदी": "सभी"}.get(language, "সব")
+        categories = [all_label] + sorted({item["category"] for item in get_business_catalog_for_language(language)})
+        category_filter = st.selectbox(texts.get("business_category", "Business category"), categories)
     recommendations = get_recommendations(profile, search_query, category_filter)
-    st.caption("Match score নির্ধারিত হয়েছে আপনার বাজেট, দক্ষতা, আগ্রহ, search এবং ব্যবসার অভিজ্ঞতা থেকে। Budget বদলালে ranking-ও বদলাবে।")
+    st.caption(texts.get("match_caption", "Match score is calculated from your budget, skills, interests, search and business experience. Changing the budget will also change the ranking."))
     if not recommendations:
-        st.warning("এই নামে কোনো plan পাওয়া যায়নি। অন্য keyword দিয়ে চেষ্টা করুন—যেমন মাছ, মাশরুম, দোকান, সেলাই বা digital।")
+        st.warning(texts.get("no_plan", "No plan found for this search. Try another keyword—such as fish, mushroom, shop, tailoring or digital."))
         return
-    st.info(f"{len(recommendations):,}টি matching plan পাওয়া গেছে। সেরা 12টি দেখানো হচ্ছে।")
+    st.info(f"{len(recommendations):,}{texts.get('matching_found', ' matching plans found. Showing the best 12.')}")
 
     for index, (score, business) in enumerate(recommendations[:12], start=1):
         with st.container(border=True):
@@ -314,35 +385,35 @@ def show_business_advisory() -> None:
                 st.subheader(f"{index}. {business['name']}")
                 st.write(business["summary"])
             with score_col:
-                st.metric("Match score", f"{score}%")
+                st.metric(texts.get("match_score", "Match score"), f"{score}%")
             c1, c2, c3 = st.columns(3)
-            c1.write(f"**প্রাথমিক বিনিয়োগ:** ₹{business['investment']:,}")
-            c2.write(f"**সম্ভাব্য মাসিক লাভ:** ₹{business['monthly_profit']:,}")
-            c3.write(f"**ঝুঁকি:** {business['risk']}")
-            if st.button(f"এই ব্যবসাটি বেছে নিন", key=f"select_{business['name']}"):
+            c1.write(f"**{texts.get('investment', 'Initial investment')}:** ₹{business['investment']:,}")
+            c2.write(f"**{texts.get('monthly_profit', 'Estimated monthly profit')}:** ₹{business['monthly_profit']:,}")
+            c3.write(f"**{texts.get('risk', 'Risk')}:** {business['risk']}")
+            if st.button(texts.get("choose_business", "Choose this business"), key=f"select_{business['name']}"):
                 st.session_state.selected_business = business
-                st.success(f"‘{business['name']}’ নির্বাচন করা হয়েছে। এবার Financial Plan খুলুন।")
+                st.success(texts.get("selected_success", "'{business}' has been selected. Open Financial Plan next.").format(business=business['name']))
 
 
 def show_market_analysis() -> None:
     texts = get_ui_texts()
     st.title(f"📍 {texts['market']}")
     if not st.session_state.profile or not st.session_state.selected_business:
-        st.warning("আগে Profile পূরণ করে একটি business নির্বাচন করুন।")
+        st.warning(texts.get("market_prompt", "Please complete your profile and select a business first."))
         return
 
     business = st.session_state.selected_business
     previous = st.session_state.market_data or {}
-    st.write(f"**{business['name']}**-এর জন্য {st.session_state.profile['district']} এলাকার বাজারের তথ্য দিন।")
-    st.caption("এগুলো demo survey data। বাস্তবে স্থানীয় customer ও দোকানদারের কাছ থেকে তথ্য সংগ্রহ করা হবে।")
+    st.write(f"**{business['name']}** — local market details for {st.session_state.profile['district']}.")
+    st.caption(texts.get("market_caption", "These are demo survey data. In real use, data will be collected from local customers and shopkeepers."))
 
     with st.form("market_form"):
-        potential_customers = st.number_input("প্রতি মাসে সম্ভাব্য customer সংখ্যা", min_value=1, value=int(previous.get("potential_customers", 40)), step=5)
-        competitors = st.number_input("একই ধরনের প্রতিযোগীর সংখ্যা", min_value=0, value=int(previous.get("competitors", 3)), step=1)
-        average_spend = st.number_input("প্রতি customer-এর আনুমানিক খরচ (₹)", min_value=1, value=int(previous.get("average_spend", 250)), step=50)
-        demand = st.select_slider("স্থানীয় demand কেমন?", options=["কম", "মাঝারি", "ভালো", "খুব ভালো"], value=previous.get("demand", "ভালো"))
-        notes = st.text_area("Customer বা দোকানদারের মতামত (ঐচ্ছিক)", value=previous.get("notes", ""), placeholder="যেমন: সাপ্তাহিক হাটে এই পণ্যের চাহিদা বেশি")
-        submitted = st.form_submit_button("বাজার বিশ্লেষণ করুন →")
+        potential_customers = st.number_input("Potential customers per month", min_value=1, value=int(previous.get("potential_customers", 40)), step=5)
+        competitors = st.number_input("Number of similar competitors", min_value=0, value=int(previous.get("competitors", 3)), step=1)
+        average_spend = st.number_input("Estimated spend per customer (₹)", min_value=1, value=int(previous.get("average_spend", 250)), step=50)
+        demand = st.select_slider("Local demand level", options=["Low", "Moderate", "Good", "Very good"], value=previous.get("demand", "Good"))
+        notes = st.text_area("Customer or shopkeeper feedback (optional)", value=previous.get("notes", ""), placeholder="For example: demand is higher in the weekly market")
+        submitted = st.form_submit_button("Analyze market →")
 
     if submitted:
         st.session_state.market_data = {
@@ -357,30 +428,31 @@ def show_market_analysis() -> None:
 
     data = st.session_state.market_data
     if data:
-        demand_points = {"কম": 25, "মাঝারি": 50, "ভালো": 75, "খুব ভালো": 100}[data["demand"]]
+        demand_points = {"Low": 25, "Moderate": 50, "Good": 75, "Very good": 100}.get(data["demand"], 75)
         competition_penalty = min(data["competitors"] * 5, 35)
         opportunity_score = min(100, max(0, demand_points + min(data["potential_customers"], 100) // 4 - competition_penalty))
-        opportunity = "উচ্চ" if opportunity_score >= 70 else "মাঝারি" if opportunity_score >= 45 else "সতর্কতার সাথে"
+        opportunity = "High" if opportunity_score >= 70 else "Moderate" if opportunity_score >= 45 else "Caution needed"
         market_size = data["potential_customers"] * data["average_spend"]
 
         st.divider()
         a, b, c = st.columns(3)
         a.metric("Market opportunity score", f"{opportunity_score}%")
-        b.metric("সম্ভাব্য মাসিক বাজার", f"₹{market_size:,}")
-        c.metric("প্রতিযোগী", data["competitors"])
-        st.success(f"মূল্যায়ন: **{opportunity} সুযোগ**। Demand: {data['demand']}।")
+        b.metric("Estimated monthly market", f"₹{market_size:,}")
+        c.metric("Competitors", data["competitors"])
+        st.success(f"Assessment: **{opportunity} opportunity**. Demand: {data['demand']}.")
         if data["competitors"] >= 5:
-            st.info("প্রতিযোগী বেশি। আলাদা quality, home delivery বা introductory offer দিয়ে শুরু করুন।")
+            st.info("Competition is high. Start with a differentiated product, home delivery, or an introductory offer.")
         else:
-            st.info("প্রতিযোগী তুলনামূলক কম। দ্রুত customer feedback সংগ্রহ করে ছোট pilot শুরু করা ভালো হবে।")
+            st.info("Competition is relatively low. Collect quick customer feedback and start with a small pilot.")
         if data["notes"]:
             st.write(f"**Survey note:** {data['notes']}")
 
 
 def show_voice_assistant() -> None:
+    texts = get_ui_texts()
     st.title("🎙️ GramSathi Voice Assistant")
-    st.write("যাঁদের পড়তে অসুবিধা হয়, তাঁরা বাংলায় কথা বলে সাহায্য নিতে পারবেন। নিচের button চাপুন, microphone permission দিন, তারপর প্রশ্ন করুন।")
-    st.info("উদাহরণ: ‘প্রোফাইল কীভাবে পূরণ করব?’, ‘কম টাকায় ব্যবসা চাই’, ‘loan-এর তথ্য চাই’, বা ‘মাশরুম ব্যবসা খুঁজুন’।")
+    st.write("Speak in your preferred language, and the assistant will respond in that language. Press the microphone button, allow access, and ask your question.")
+    st.info("Examples: ‘How do I fill my profile?’, ‘I want a low-cost business idea’, ‘show me loan details’, or ‘find a mushroom business’.")
 
     components.html(
         """
@@ -572,7 +644,7 @@ Give specific but realistic advice. Mention that local prices and scheme eligibi
 """
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model=GEMINI_MODEL,
         contents=prompt,
     )
     if not response.text:
@@ -600,9 +672,12 @@ Typed question: {question or 'No typed question; understand the recorded audio.'
 """
     contents = [prompt]
     if audio_file is not None:
-        contents.append(types.Part.from_bytes(data=audio_file.getvalue(), mime_type=audio_file.type or "audio/wav"))
+        mime_type = (audio_file.type or "audio/wav").lower()
+        if "wav" not in mime_type and "webm" not in mime_type and "mp3" not in mime_type:
+            mime_type = "audio/wav"
+        contents.append(types.Part.from_bytes(data=audio_file.getvalue(), mime_type=mime_type))
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(model="gemini-3.6-flash", contents=contents)
+    response = client.models.generate_content(model=GEMINI_MODEL, contents=contents)
     if not response.text:
         raise RuntimeError("AI কোনো উত্তর দেয়নি।")
     return response.text
@@ -656,14 +731,14 @@ def show_financial_plan() -> None:
     business = st.session_state.selected_business
     profile = st.session_state.profile
     if not profile:
-        st.warning("আগে ‘My Profile’ পেজ থেকে প্রোফাইল সম্পূর্ণ করুন।")
+        st.warning("Please complete your profile from the My Profile page first.")
         return
     if not business:
-        st.warning("আগে Business Advisory থেকে একটি ব্যবসা বেছে নিন।")
+        st.warning("Please select a business from Business Advisory first.")
         return
 
-    st.subheader(f"নির্বাচিত ব্যবসা: {business['name']}")
-    st.caption("নিচের হিসাবগুলি প্রাথমিক অনুমান। স্থানীয় বাজারদর অনুযায়ী পরে পরিবর্তন করা যাবে।")
+    st.subheader(f"Selected business: {business['name']}")
+    st.caption("The figures below are preliminary estimates and can change with local market rates.")
 
     investment = business["investment"]
     own_fund = min(profile["budget"], investment)
@@ -674,41 +749,41 @@ def show_financial_plan() -> None:
     break_even_months = math.ceil(investment / monthly_profit)
 
     a, b, c, d = st.columns(4)
-    a.metric("মোট প্রাথমিক বিনিয়োগ", f"₹{investment:,}")
-    b.metric("নিজের অর্থ", f"₹{own_fund:,}")
-    c.metric("সম্ভাব্য মাসিক বিক্রয়", f"₹{monthly_revenue:,}")
-    d.metric("সম্ভাব্য মাসিক লাভ", f"₹{monthly_profit:,}")
+    a.metric("Total initial investment", f"₹{investment:,}")
+    b.metric("Your own contribution", f"₹{own_fund:,}")
+    c.metric("Estimated monthly sales", f"₹{monthly_revenue:,}")
+    d.metric("Estimated monthly profit", f"₹{monthly_profit:,}")
 
-    st.subheader("প্রাথমিক বিনিয়োগের বিভাজন")
+    st.subheader("Initial investment breakdown")
     equip = round(investment * 0.50)
     raw_material = round(investment * 0.30)
     working_capital = investment - equip - raw_material
     table_data = {
-        "খাত": ["যন্ত্রপাতি/সেটআপ", "কাঁচামাল/প্রথম stock", "Working capital", "মোট"],
-        "আনুমানিক পরিমাণ (₹)": [equip, raw_material, working_capital, investment],
+        "Category": ["Equipment/setup", "Raw materials/initial stock", "Working capital", "Total"],
+        "Estimated amount (₹)": [equip, raw_material, working_capital, investment],
     }
     st.table(table_data)
 
-    st.subheader("Loan ও EMI Calculator")
+    st.subheader("Loan and EMI calculator")
     l1, l2, l3 = st.columns(3)
     with l1:
-        loan_amount = st.number_input("Loan-এর পরিমাণ (₹)", min_value=0, max_value=500000, value=int(default_loan), step=5000)
+        loan_amount = st.number_input("Loan amount (₹)", min_value=0, max_value=500000, value=int(default_loan), step=5000)
     with l2:
-        interest_rate = st.number_input("বার্ষিক সুদের হার (%)", min_value=0.0, max_value=25.0, value=10.0, step=0.5)
+        interest_rate = st.number_input("Annual interest rate (%)", min_value=0.0, max_value=25.0, value=10.0, step=0.5)
     with l3:
-        tenure_years = st.selectbox("Loan-এর সময়কাল", [1, 2, 3, 4, 5], index=2, format_func=lambda x: f"{x} বছর")
+        tenure_years = st.selectbox("Loan tenure", [1, 2, 3, 4, 5], index=2, format_func=lambda x: f"{x} years")
 
     emi = calculate_emi(loan_amount, interest_rate, tenure_years * 12)
     total_payment = emi * tenure_years * 12
     e1, e2, e3 = st.columns(3)
-    e1.metric("মাসিক EMI", f"₹{emi:,.0f}")
-    e2.metric("মোট পরিশোধ", f"₹{total_payment:,.0f}")
-    e3.metric("EMI-এর পর অবশিষ্ট মাসিক লাভ", f"₹{monthly_profit - emi:,.0f}")
+    e1.metric("Monthly EMI", f"₹{emi:,.0f}")
+    e2.metric("Total payment", f"₹{total_payment:,.0f}")
+    e3.metric("Remaining monthly profit after EMI", f"₹{monthly_profit - emi:,.0f}")
 
     if monthly_profit - emi < 0:
-        st.error("এই loan EMI সম্ভাব্য মাসিক লাভের চেয়ে বেশি। Loan-এর পরিমাণ বা সময়কাল পরিবর্তন করুন।")
+        st.error("This loan EMI is higher than the likely monthly profit. Reduce the loan amount or increase the tenure.")
     else:
-        st.success(f"আনুমানিক break-even সময়: {break_even_months} মাস। এই পরিকল্পনায় EMI দেওয়ার পরেও লাভ থাকবে।")
+        st.success(f"Estimated break-even time: {break_even_months} months. This plan still leaves room for profit after EMI.")
 
 
 def show_schemes_loan() -> None:
@@ -717,31 +792,31 @@ def show_schemes_loan() -> None:
     profile = st.session_state.profile
     business = st.session_state.selected_business
     if not profile:
-        st.warning("আগে ‘My Profile’ পেজ থেকে প্রোফাইল সম্পূর্ণ করুন।")
+        st.warning("Please complete your profile from the My Profile page first.")
         return
 
     project_cost = business["investment"] if business else profile["budget"]
-    st.write(f"আপনার ₹{project_cost:,} আনুমানিক project cost এবং rural location-এর ভিত্তিতে নিচের scheme-গুলি প্রাসঙ্গিক হতে পারে।")
+    st.write(f"Based on your estimated project cost of ₹{project_cost:,} and your rural location, these schemes may be relevant.")
 
     with st.container(border=True):
         st.subheader("1. PMEGP — Prime Minister's Employment Generation Programme")
-        st.write("নতুন viable micro-enterprise-এর জন্য bank-linked subsidy scheme। আপনার নির্বাচিত ব্যবসাটি নতুন unit হলে এটি বিবেচনা করতে পারো।")
-        st.write("**প্রাথমিক match:** ভালো — project cost ₹50 lakh-এর অনেক কম।")
-        st.write("**খেয়াল রাখবে:** আবেদনকারীকে 18+ হতে হয়; নতুন unit হতে হয়। নির্দিষ্ট project size-এর উপরে শিক্ষাগত যোগ্যতার শর্ত প্রযোজ্য হতে পারে।")
-        st.link_button("Official PMEGP portal খুলুন ↗", "https://www.kviconline.gov.in/pmegpeportal/pmegphome/index.jsp")
+        st.write("A bank-linked subsidy scheme for setting up a new viable micro-enterprise. This is relevant if your chosen business is a new unit.")
+        st.write("**Initial match:** Good — your project cost is well below ₹50 lakh.")
+        st.write("**Important:** The applicant must usually be 18+ and the business should be a new unit. Some conditions may apply above specific project sizes.")
+        st.link_button("Open official PMEGP portal ↗", "https://www.kviconline.gov.in/pmegpeportal/pmegphome/index.jsp")
 
     with st.container(border=True):
         st.subheader("2. SVEP under DAY-NRLM")
-        st.write("গ্রামীণ দরিদ্র পরিবারের enterprise শুরু ও স্থিতিশীল করার জন্য business-management support, training এবং financial assistance-এর ecosystem।")
-        st.write("**প্রাথমিক match:** ভালো — আপনার উদ্যোগটি rural micro-enterprise হওয়ায় স্থানীয় SHG/Block Mission Management Unit-এ খোঁজ নিতে পারো।")
-        st.link_button("Official SVEP information খুলুন ↗", "https://www.svep.nrlm.gov.in/landing")
+        st.write("An ecosystem of business-management support, training, and financial assistance for rural poor families starting and stabilising enterprises.")
+        st.write("**Initial match:** Good — your initiative fits a rural micro-enterprise profile, so you can check with your local SHG or block mission office.")
+        st.link_button("Open official SVEP information ↗", "https://www.svep.nrlm.gov.in/landing")
 
     with st.container(border=True):
-        st.subheader("3. MUDRA loan — Bank থেকে জেনে নিন")
-        st.write("ছোট ব্যবসার working capital বা term-loan-এর জন্য কাছের bank branch-এ MUDRA loan-এর availability ও বর্তমান eligibility জেনে নাও।")
-        st.write("**প্রাথমিক match:** ₹50,000–₹1 lakh-এর মতো ছোট project-এর জন্য উপযোগী হতে পারে।")
+        st.subheader("3. MUDRA loan — Check with your bank")
+        st.write("For working capital or term loans for small businesses, check local bank branch availability and current eligibility for a MUDRA loan.")
+        st.write("**Initial match:** It may be suitable for small projects around ₹50,000–₹1 lakh.")
 
-    st.warning("এটি eligibility prediction, অনুমোদনের নিশ্চয়তা নয়। আবেদন করার আগে official portal, bank বা জেলা শিল্পকেন্দ্রে বর্তমান নিয়ম যাচাই করো।")
+    st.warning("This is an eligibility prediction, not a guarantee of approval. Before applying, verify current rules on the official portal, with the bank, or at the district industry centre.")
 
 
 def show_ai_business_plan() -> None:
@@ -750,45 +825,45 @@ def show_ai_business_plan() -> None:
     profile = st.session_state.profile
     business = st.session_state.selected_business
     if not profile or not business:
-        st.warning("আগে প্রোফাইল save করে Business Advisory থেকে একটি ব্যবসা নির্বাচন করুন।")
+        st.warning("Please save your profile and select a business from Business Advisory first.")
         return
 
-    if not st.button("✨ আমার Business Plan তৈরি করুন"):
-        st.info("উপরের button-এ click করলে আপনার তথ্য অনুযায়ী পরিকল্পনা তৈরি হবে।")
+    if not st.button("✨ Generate my business plan"):
+        st.info("Click the button above to build a plan from your data.")
         return
 
     investment = business["investment"]
     monthly_profit = business["monthly_profit"]
-    st.success(f"{profile['name']}-এর জন্য personalised plan তৈরি হয়েছে।")
-    st.subheader(f"{business['name']} — এক নজরে")
-    st.write(f"{profile['district']}, {profile['state']}-এ ₹{investment:,} দিয়ে এই ব্যবসা শুরু করা বাস্তবসম্মত। লক্ষ্য রাখুন, প্রথম 6 মাসে মাসিক ₹{monthly_profit:,} আনুমানিক নিট লাভে পৌঁছানো।")
+    st.success(f"A personalised plan has been created for {profile['name']}.")
+    st.subheader(f"{business['name']} — quick overview")
+    st.write(f"Starting this business in {profile['district']}, {profile['state']} with ₹{investment:,} is realistic. Aim for roughly ₹{monthly_profit:,} monthly net profit within the first 6 months.")
 
     left, right = st.columns(2)
     with left:
-        st.subheader("প্রথম 30 দিনের Action Plan")
+        st.subheader("First 30 days action plan")
         st.markdown(
             f"""
-            1. **দিন 1–7:** স্থানীয় বাজারে 10 জন সম্ভাব্য customer ও 3 জন supplier-এর সঙ্গে কথা বলুন।
-            2. **দিন 8–15:** ₹{round(investment * 0.50):,} পর্যন্ত প্রয়োজনীয় setup/যন্ত্রপাতি কিনুন।
-            3. **দিন 16–22:** ছোট আকারে উৎপাদন বা পরিষেবা শুরু করে feedback নিন।
-            4. **দিন 23–30:** WhatsApp, স্থানীয় দোকান ও সাপ্তাহিক হাটে বিক্রি শুরু করুন।
+            1. **Days 1–7:** Speak with 10 potential customers and 3 suppliers in the local market.
+            2. **Days 8–15:** Buy the essential setup or equipment up to ₹{round(investment * 0.50):,}.
+            3. **Days 16–22:** Start small-scale production or service and collect feedback.
+            4. **Days 23–30:** Begin selling through WhatsApp, local shops, and the weekly market.
             """
         )
     with right:
-        st.subheader("বিক্রির কৌশল")
+        st.subheader("Sales strategy")
         st.markdown(
             """
-            - প্রথম 20 জন customer-কে introductory offer দিন।
-            - একই এলাকার দোকানদার বা SHG-এর সঙ্গে অংশীদারিত্ব করুন।
-            - প্রতিটি বিক্রি ও খরচ খাতায় বা মোবাইলে লিখে রাখুন।
-            - ভালো customer feedback-এর ছবি/বার্তা WhatsApp status-এ শেয়ার করুন।
+            - Offer an introductory price to the first 20 customers.
+            - Partner with nearby shopkeepers or SHGs in your area.
+            - Record each sale and expense in a notebook or mobile app.
+            - Share good customer feedback on WhatsApp status updates.
             """
         )
 
-    st.subheader("ঝুঁকি কমানোর পরামর্শ")
-    st.write("একবারে সব টাকা খরচ করবেন না। মোট বিনিয়োগের অন্তত 20% emergency working capital হিসেবে রাখুন। প্রথম মাসে ছোট scale-এ বিক্রি পরীক্ষা করে তারপর উৎপাদন বাড়ান।")
-    st.subheader("আজকের পরবর্তী কাজ")
-    st.info("নিকটবর্তী বাজারে 3 জন customer-এর সাথে কথা বলুন এবং তাদের প্রয়োজন/দাম একটি খাতায় লিখুন। এই তথ্য পরের version-এ local demand analysis-এর জন্য ব্যবহার হবে।")
+    st.subheader("Risk-reduction advice")
+    st.write("Do not spend all your capital at once. Keep at least 20% of total investment as emergency working capital. Test sales on a small scale before scaling up.")
+    st.subheader("Next task today")
+    st.info("Speak with 3 nearby customers and note their need and price in a notebook. This information can be used in the next version of local demand analysis.")
 
     st.divider()
     st.subheader("✨ Gemini AI-এর ব্যক্তিগত পরামর্শ")
@@ -813,10 +888,10 @@ def show_ai_business_plan() -> None:
 def show_coming_soon(title: str, description: str) -> None:
     st.title(title)
     if not st.session_state.profile:
-        st.warning("আগে ‘My Profile’ পেজ থেকে প্রোফাইল সম্পূর্ণ করুন।")
+        st.warning("Please complete your profile from the My Profile page first.")
     else:
-        st.success(f"প্রোফাইল পাওয়া গেছে: {st.session_state.profile['name']} — {st.session_state.profile['district']}, {st.session_state.profile['state']}")
-    st.info(description + " এই অংশটি পরের ধাপে তৈরি করব।")
+        st.success(f"Profile found: {st.session_state.profile['name']} — {st.session_state.profile['district']}, {st.session_state.profile['state']}")
+    st.info(description + " This section will be developed in the next phase.")
 
 
 def main() -> None:
